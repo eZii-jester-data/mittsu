@@ -1,5 +1,11 @@
 name: Build
-on: [push]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   linux:
@@ -24,13 +30,18 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
       - run: sudo apt-get update; sudo apt-get install cmake xorg-dev libgl1-mesa-dev
       - run: bash install-glfw.sh
+      - run: gem install bundler
       - run: bundle install --path vendor/bundle
       - name: Test & publish code coverage
         uses: paambaati/codeclimate-action@v2.2.1
+        if: github.event_name == 'push'
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
         with:
           coverageCommand: bundle exec rake test
+      - name: Test
+        if: github.event_name != 'push'
+        run: bundle exec rake test
 
   macos:
     name: macOS
@@ -79,5 +90,6 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
       - run: .\install-glfw.ps1
+      - run: gem install bundler
       - run: bundle install --path vendor/bundle
       - run: bundle exec rake test
